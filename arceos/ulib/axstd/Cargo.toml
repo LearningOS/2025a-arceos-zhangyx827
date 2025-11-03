@@ -76,7 +76,12 @@ log-level-trace = ["axfeat/log-level-trace"]
 
 [dependencies]
 axfeat = { workspace = true }
+axhal = { workspace = true }
 arceos_api = { workspace = true }
 axio = "0.1"
 axerrno = "0.1"
 kspin = "0.1"
+
+[dependencies.xxhash-rust]
+version = "0.8.12"
+features = ["xxh3", "const_xxh3"]
