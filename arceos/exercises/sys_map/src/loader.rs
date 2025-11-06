@@ -2,6 +2,7 @@ use std::io::{self, Read};
 use std::io::SeekFrom;
 use std::io::Seek;
 use std::fs::File;
+use std::println;
 use alloc::vec::Vec;
 use alloc::vec;
 use axhal::paging::MappingFlags;
@@ -45,6 +46,7 @@ pub fn load_user_app(fname: &str, uspace: &mut AddrSpace) -> io::Result<usize> {
         }
         assert_eq!(index, filesz);
         uspace.write(VirtAddr::from(phdr.p_vaddr as usize), &data)?;
+        // println!("va: {}!!!", phdr.p_vaddr);
     }
 
     Ok(entry)

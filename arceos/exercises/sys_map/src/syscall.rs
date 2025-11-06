@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use core::ffi::{c_void, c_char, c_int};
+use std::println;
 use axhal::arch::TrapFrame;
 use axhal::trap::{register_trap_handler, SYSCALL};
 use axerrno::LinuxError;
@@ -8,6 +9,10 @@ use axtask::current;
 use axtask::TaskExtRef;
 use axhal::paging::MappingFlags;
 use arceos_posix_api as api;
+use memory_addr::{AddrRange, VirtAddr, is_aligned_4k, MemoryAddr};
+use axhal::mem::phys_to_virt;
+
+const USER_ASPACE_SIZE: usize = 0x40_0000_0000;
 
 const SYS_IOCTL: usize = 29;
 const SYS_OPENAT: usize = 56;
@@ -140,7 +145,51 @@ fn sys_mmap(
     fd: i32,
     _offset: isize,
 ) -> isize {
-    unimplemented!("no sys_mmap!");
+    let mut buf = [0u8; 64];
+    let ptr  = buf.as_mut_ptr();
+    sys_read(fd, ptr as *mut c_void, length);
+    // println!("buf is :{:?}!!!!!!!!!!!!!!", buf);
+    let mut newlen = length;
+    if length % 4096 != 0 {
+        newlen = ((length / 4096) + 1) * 4096;
+    }
+
+    let binding = axtask::current();
+    let mut uspace = binding.task_ext().aspace.lock();
+    let va: isize;
+    if addr != core::ptr::null_mut() {
+        va = addr as isize;
+    } else {
+        if let Some(addr) = uspace.find_free_area(VirtAddr::from(0), length, AddrRange::from_start_size(VirtAddr::from(0), USER_ASPACE_SIZE)) {
+            va = addr.as_usize() as isize;
+        } else {
+            return -1;
+        }
+    }
+
+
+    let start: VirtAddr = (va as usize).into();
+    if !start.is_aligned_4k() || !is_aligned_4k(newlen) {
+        // return ax_err!(InvalidInput, "address not aligned");
+        // println!("{:?}!!!!!!!!!!!!!!!, {:?}!!!!!!!!!!!!!!!!!", start, newlen);
+    }
+    uspace.map_alloc(start, newlen, MappingFlags::from_bits(prot as usize).expect("REASON") | MappingFlags::USER, true);
+    let (paddr, _, _) = uspace
+    .page_table()
+    .query(start)
+    .unwrap_or_else(|_| panic!("Mapping failed for segment: {:#x}", start));
+    unsafe {
+        core::ptr::copy_nonoverlapping(
+            buf.as_ptr(),
+            phys_to_virt(paddr).as_mut_ptr(),
+            newlen
+        )
+    }
+
+    // let ptr = phys_to_virt(paddr).as_mut_ptr();
+    // unsafe { println!("{:?}", *(va as *const u8)); }
+    va
+
 }
 
 fn sys_openat(dfd: c_int, fname: *const c_char, flags: c_int, mode: api::ctypes::mode_t) -> isize {

@@ -1,0 +1,11 @@
+printf '\033[37mmkdir\033[0m \033[90m-p exercises/sys_map\033[0m\n'
+mkdir -p exercises/sys_map
+printf "    \033[92;1mBuilding\033[0m App: sys_map, Arch: riscv64, Platform: riscv64-qemu-virt, App type: rust\n"
+printf '\033[37mcargo -C exercises/sys_map build\033[0m \033[90m-Z unstable-options --target riscv64gc-unknown-none-elf --target-dir /home/zyx/OS/2025a-arceos-zhangyx827/arceos/target --release  --features "axstd/log-level-warn"\033[0m\n'
+cargo -C exercises/sys_map build -Z unstable-options --target riscv64gc-unknown-none-elf --target-dir /home/zyx/OS/2025a-arceos-zhangyx827/arceos/target --release  --features "axstd/log-level-warn"
+cp /home/zyx/OS/2025a-arceos-zhangyx827/arceos/target/riscv64gc-unknown-none-elf/release/sys_map exercises/sys_map/sys_map_riscv64-qemu-virt.elf
+printf '\033[37mrust-objcopy --binary-architecture=riscv64\033[0m \033[90mexercises/sys_map/sys_map_riscv64-qemu-virt.elf --strip-all -O binary exercises/sys_map/sys_map_riscv64-qemu-virt.bin\033[0m\n'
+rust-objcopy --binary-architecture=riscv64 exercises/sys_map/sys_map_riscv64-qemu-virt.elf --strip-all -O binary exercises/sys_map/sys_map_riscv64-qemu-virt.bin
+printf "    \033[96;1mRunning\033[0m on qemu...\n"
+printf '\033[37mqemu-system-riscv64\033[0m \033[90m-m 128M -smp 1 -machine virt -bios default -kernel exercises/sys_map/sys_map_riscv64-qemu-virt.bin -drive if=pflash,file=/home/zyx/OS/2025a-arceos-zhangyx827/arceos/pflash.img,format=raw,unit=1 -device virtio-blk-pci,drive=disk0 -drive id=disk0,if=none,format=raw,file=disk.img -nographic -D qemu.log -d in_asm,int,mmu,pcall,cpu_reset,guest_errors\033[0m\n'
+qemu-system-riscv64 -m 128M -smp 1 -machine virt -bios default -kernel exercises/sys_map/sys_map_riscv64-qemu-virt.bin -drive if=pflash,file=/home/zyx/OS/2025a-arceos-zhangyx827/arceos/pflash.img,format=raw,unit=1 -device virtio-blk-pci,drive=disk0 -drive id=disk0,if=none,format=raw,file=disk.img -nographic -D qemu.log -d in_asm,int,mmu,pcall,cpu_reset,guest_errors

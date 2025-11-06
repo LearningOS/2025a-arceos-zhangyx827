@@ -60,6 +60,7 @@ fn init_user_stack(uspace: &mut AddrSpace, populating: bool) -> io::Result<VirtA
         "Mapping user stack: {:#x?} -> {:#x?}",
         ustack_vaddr, ustack_top
     );
+    
     uspace.map_alloc(
         ustack_vaddr,
         crate::USER_STACK_SIZE,
