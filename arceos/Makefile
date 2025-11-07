@@ -30,8 +30,8 @@
 ARCH ?= riscv64
 PLATFORM ?=
 SMP ?= 1
-# MODE ?= release
-MODE ?= debug
+MODE ?= release
+# MODE ?= debug
 LOG ?= warn
 V ?=
 

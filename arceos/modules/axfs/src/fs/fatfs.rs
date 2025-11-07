@@ -65,6 +65,9 @@ impl FatFileSystem {
 impl VfsNodeOps for FileWrapper<'static> {
     axfs_vfs::impl_vfs_non_dir_default! {}
 
+    fn rename(&self, _src_path: &str, _dst_path: &str) -> VfsResult {
+        Err(VfsError::Unsupported)
+    }
     fn get_attr(&self) -> VfsResult<VfsNodeAttr> {
         let size = self.0.lock().seek(SeekFrom::End(0)).map_err(as_vfs_err)?;
         let blocks = (size + BLOCK_SIZE as u64 - 1) / BLOCK_SIZE as u64;
