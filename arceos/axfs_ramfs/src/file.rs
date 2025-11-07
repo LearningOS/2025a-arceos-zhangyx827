@@ -1,5 +1,5 @@
 use alloc::vec::Vec;
-use axfs_vfs::{impl_vfs_non_dir_default, VfsNodeAttr, VfsNodeOps, VfsResult};
+use axfs_vfs::{impl_vfs_non_dir_default, VfsError, VfsNodeAttr, VfsNodeOps, VfsResult};
 use spin::RwLock;
 
 /// The file node in the RAM filesystem.
@@ -18,6 +18,10 @@ impl FileNode {
 }
 
 impl VfsNodeOps for FileNode {
+    fn rename(&self, _src_path: &str, _dst_path: &str) -> VfsResult {
+        Err(VfsError::Unsupported)
+    }
+
     fn get_attr(&self) -> VfsResult<VfsNodeAttr> {
         Ok(VfsNodeAttr::new_file(self.content.read().len() as _, 0))
     }

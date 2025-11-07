@@ -70,6 +70,69 @@ impl DirNode {
 }
 
 impl VfsNodeOps for DirNode {
+    fn rename(&self, src_path: &str, dst_path: &str) -> VfsResult {
+        log::warn!(
+            "ramfs.rename: src='{}' dst='{}'",
+            src_path, dst_path
+        );
+
+        let (src_name, src_rest) = split_path(src_path);
+        let (dst_name, dst_rest) = split_path(dst_path);
+
+        match (src_rest, dst_rest) {
+            // Both are direct children of current directory: perform rename in-place
+            (None, None) => {
+                // Do not allow special entries or empty names
+                if src_name.is_empty()
+                    || src_name == "."
+                    || src_name == ".."
+                    || dst_name.is_empty()
+                    || dst_name == "."
+                    || dst_name == ".."
+                {
+                    return Err(VfsError::InvalidInput);
+                }
+
+                let mut children = self.children.write();
+                if !children.contains_key(src_name) {
+                    log::warn!("ramfs.rename: src child '{}' not found", src_name);
+                }
+                let node = children.remove(src_name).ok_or(VfsError::NotFound)?;
+                if children.contains_key(dst_name) {
+                    // Destination already exists here; disallow to avoid implicit moves/overwrites
+                    return Err(VfsError::AlreadyExists);
+                }
+                children.insert(dst_name.into(), node);
+                Ok(())
+            }
+            // Descend into the same subdirectory hierarchy. Only support rename within same dir.
+            (Some(src_rest), Some(dst_rest)) => {
+                match (src_name, dst_name) {
+                    // Stay at current directory level
+                    ("" | ".", "" | ".") => self.rename(src_rest, dst_rest),
+                    // Go up one level if both are ".."
+                    ("..", "..") => self
+                        .parent()
+                        .ok_or(VfsError::NotFound)?
+                        .rename(src_rest, dst_rest),
+                    // Go into the same named subdirectory
+                    (s, d) if s == d => {
+                        let subdir = self
+                            .children
+                            .read()
+                            .get(s)
+                            .cloned()
+                            .ok_or(VfsError::NotFound)?;
+                        subdir.rename(src_rest, dst_rest)
+                    }
+                    // Different parent directories imply a move, which is unsupported here
+                    _ => Err(VfsError::Unsupported),
+                }
+            }
+            _ => Err(VfsError::Unsupported),
+        }
+    }
+
     fn get_attr(&self) -> VfsResult<VfsNodeAttr> {
         Ok(VfsNodeAttr::new_dir(4096, 0))
     }

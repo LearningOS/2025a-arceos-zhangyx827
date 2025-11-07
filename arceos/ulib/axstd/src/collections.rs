@@ -2,7 +2,10 @@
 use axhal::misc::random;
 use xxhash_rust::const_xxh3::xxh3_64 as const_xxh3;
 use alloc::boxed::Box;
+pub use alloc::collections::VecDeque;
 
+// extern crate alloc;
+// pub use alloc::collections;
 const TABLE_SIZE: usize = 50101;
 pub struct HashMap<K, V> {
     pairs: Box<[Option<(K, V)>]>,

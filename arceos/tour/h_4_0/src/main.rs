@@ -43,7 +43,7 @@ fn main() {
 
     // Load corresponding images for VM.
     info!("VM created success, loading images...");
-    let image_fname = "/sbin/m_1_1_riscv64-qemu-virt.bin";
+    let image_fname = "/sbin/os";
     load_vm_image(image_fname.to_string(), KERNEL_BASE.into(), &aspace).expect("Failed to load VM images");
 
     // Register pflash device into vm.
